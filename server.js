@@ -8,9 +8,9 @@ function start() {
   wss.on('connection', (ws) => {
     ws.on('message', async (message) => {
       const req = JSON.parse(message.toString())
-      if (req.event ==='connect') {
-          ws.nickname = req.payload.username;
-          initGames(ws, req.payload.gameId);
+      if (req.event === 'connect') {
+        ws.nickname = req.payload.username;
+        initGames(ws, req.payload.gameId);
       }
       broadcastMessage(req);
     });
@@ -18,6 +18,7 @@ function start() {
   
   function initGames(ws, gameId) {
     if (!games[gameId]) {
+      ws.firstPlayer = true;
       games[gameId] = [ws];
     }
     
@@ -29,9 +30,8 @@ function start() {
       games[gameId] = games[gameId].filter((wsc) => {
         return wsc.nickname !== ws.nickname
       });
-      
-        games[gameId] = [...games[gameId], ws];
-      
+
+      games[gameId] = [...games[gameId], ws];
     }
   }
   
@@ -54,7 +54,8 @@ function start() {
           res = {
             type: 'readyToPlay',
             payload: {
-              canStart: games[gameId].length > 1,
+              canStart: games[gameId].length === 2,
+              firstPlayer: user.firstPlayer | false,
               username
             }
           }
@@ -68,6 +69,12 @@ function start() {
         case 'checkShoot':
           res = {
             type: 'isHit',
+            payload: params.payload
+          }
+          break;
+        case 'win':
+          res = {
+            type: 'won',
             payload: params.payload
           }
           break;
