@@ -1,4 +1,3 @@
-const ws = require('ws');
 const { WebSocketServer } = require("ws");
 
 const games = {};
@@ -9,17 +8,9 @@ function start() {
   wss.on('connection', (ws) => {
     ws.on('message', async (message) => {
       const req = JSON.parse(message.toString())
-      switch (req.event) {
-        case 'connect':
+      if (req.event ==='connect') {
           ws.nickname = req.payload.username;
-          initGames(ws, req.payload.gameId)
-          break;
-        case 'disconnection':
-          broadcastMessage(message);
-          break;
-        case 'error':
-          broadcastMessage(message);
-          break;
+          initGames(ws, req.payload.gameId);
       }
       broadcastMessage(req);
     });
@@ -34,9 +25,13 @@ function start() {
       games[gameId] = [...games[gameId], ws];
     }
     
-    if (games[gameId] && games[gameId]?.length === 2) {
-      games[gameId] = games[gameId].filter(({ nickname }) => nickname !== ws.nickname)
-      games[gameId] = [...games[gameId], ws];
+    if (games[gameId] && games[gameId].length === 2) {
+      games[gameId] = games[gameId].filter((wsc) => {
+        return wsc.nickname !== ws.nickname
+      });
+      
+        games[gameId] = [...games[gameId], ws];
+      
     }
   }
   
@@ -77,16 +72,9 @@ function start() {
           }
           break;
         default:
-          res = {
-            type: 'logout',
-            payload: params.payload
-          }
           break;
       }
       user.send(JSON.stringify(res));
-    })
-    wss.clients.forEach(client => {
-      client.send(JSON.stringify(res))
     })
   }
 }
